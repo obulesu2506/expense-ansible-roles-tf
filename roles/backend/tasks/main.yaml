@@ -1,0 +1,73 @@
+- name: disable current nodejs version
+  ansible.builtin.command: dnf module disable nodejs -y
+
+- name: enable nodejs 20 version
+  ansible.builtin.command: dnf module enable nodejs:20 -y
+
+- name: install nodejs
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+  - nodejs
+  - mysql
+
+- name: create expense user
+  ansible.builtin.user:
+    name: expense
+
+- name: include from common role
+  # tags:
+  # - deployment
+  include_role:
+    name: common
+    tasks_from: main  # this 'main' should be any name which defined file name under COMMON ROLE tasks
+
+# - name: create app directory for downloading the backend code
+#   ansible.builtin.file:
+#     path: /app
+#     state: directory
+
+# - name: download backend code
+#   ansible.builtin.get_url:
+#     url: https://expense-builds.s3.us-east-1.amazonaws.com/expense-backend-v2.zip
+#     dest: /tmp/backend.zip
+
+# - name: unzip the backend code
+#   ansible.builtin.unarchive:
+#     src: /tmp/backend.zip
+#     dest: /app
+#     remote_src: yes
+
+- name: install dependencies
+  community.general.npm:
+    path: /app
+
+- name: copy backend service
+  ansible.builtin.template:  #It will search in the templates
+    src: backend.service.j2
+    dest: /etc/systemd/system/backend.service
+
+- name: install Python libraries
+  ansible.builtin.pip:
+    name: "{{ item }}"
+    executable: pip3.9
+  loop:
+  - cryptography
+  - PyMySQL
+
+- name: connect to MYSQL 
+  community.mysql.mysql_db:
+    login_user: "{{ MYSQL_USER }}"
+    login_password: "{{ MYSQL_PASSWORD }}"
+    login_host: "{{ MYSQL_HOST }}"
+    target: /app/schema/backend.sql
+    state: import
+    name: all
+
+- name: Daeomon Reload and restart the services
+  ansible.builtin.systemd_service:
+    name: backend
+    state: restarted
+    enabled: true
+    daemon_reload: true
