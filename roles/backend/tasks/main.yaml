@@ -15,13 +15,13 @@
 - name: create expense user
   ansible.builtin.user:
     name: expense
-
-- name: include from common role
-  # tags:
-  # - deployment
-  include_role:
-    name: common
-    tasks_from: main  # this 'main' should be any name which defined file name under COMMON ROLE tasks
+#commenting from 18 to 24th line to avoid repeated execution
+# - name: include from common role
+#   # tags:
+#   # - deployment
+#   include_role:
+#     name: common
+#     tasks_from: main  # this 'main' should be any name which defined file name under COMMON ROLE tasks
 
 # - name: create app directory for downloading the backend code
 #   ansible.builtin.file:
